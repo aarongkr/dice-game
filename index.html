@@ -359,7 +359,6 @@
             { type: 'specificWinOdds', baseReward: 80, description: "Win a bet on {dice} with odds > {odds}:1.", 
               dice: Object.keys(diceData), minOdds: [2.5, 4, 6]}, // Odds focus
             { type: 'numBetsPlaced', baseReward: 25, description: "Place {target} bets.", targetMin: 5, targetMax: 15},
-            { type: 'collectCoins', baseReward: 50, description: "Earn {target} Coins from challenges.", targetMin: 100, targetMax: 300}, // Meta challenge
             { type: 'highRollerWin', baseReward: 70, description: "Win a bet of at least £{amount}.", targetMin: 5, targetMax: 15},
         ];
         const selectedType = types[Math.floor(Math.random() * types.length)];
