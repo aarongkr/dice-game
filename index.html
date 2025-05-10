@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Tycoon - Fixed N Edition</title>
+    <style>
+        /* --- BASE & THEME VARIABLES --- */
+        :root {
+            --bg-primary: #2c3e50; /* Dark Slate Blue */
+            --bg-secondary: #34495e; /* Wet Asphalt */
+            --bg-tertiary: #233444;  /* Darker variant for depth */
+            --text-primary: #ecf0f1; /* Clouds */
+            --text-secondary: #bdc3c7; /* Silver */
+            --accent-primary: #1abc9c; /* Turquoise */
+            --accent-secondary: #16a085; /* Greensea */
+            --accent-bet-overunder: #3498db; /* Peter River */
+            --accent-bet-selected: #e67e22; /* Carrot */
+            --color-win: #2ecc71; /* Emerald */
+            --color-loss: #e74c3c; /* Alizarin */
+            --color-push: #f39c12; /* Orange */
+            --color-coin: #f1c40f; /* Sun Flower */
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --input-bg: #ecf0f1;
+            --input-text: #2c3e50;
+            --border-color: #4a627a; /* Slightly lighter for borders */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px; /* Reduced padding slightly */
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            width: 100%;
+            max-width: 1100px; /* Adjusted max-width */
+            justify-content: center;
+        }
+
+        #game-column, #meta-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #game-column { flex: 1.8; min-width: 300px; } /* Adjusted flex */
+        #meta-column { flex: 1.2; min-width: 280px; }
+
+
+        .game-section, .meta-section {
+            background-color: var(--bg-secondary);
+            padding: 18px; /* Adjusted padding */
+            border-radius: 8px; /* Slightly smaller radius */
+            box-shadow: 0 4px 12px var(--shadow-color);
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+
+        h1 { color: var(--accent-primary); margin-bottom: 18px; font-size: 1.9em; }
+        h2 { color: var(--accent-secondary); margin-top: 0; margin-bottom: 12px; font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        h3 { color: var(--text-primary); margin-top: 12px; margin-bottom: 8px; font-size: 1.15em; }
+
+        .control-group { margin-bottom: 12px; text-align: left; }
+        .control-group label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--text-secondary); font-size: 0.9em; }
+        .control-group input[type="number"], .control-group select {
+            width: calc(100% - 20px); padding: 9px; border-radius: 4px;
+            border: 1px solid var(--border-color); background-color: var(--input-bg);
+            color: var(--input-text); font-size: 0.95em; box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .control-group input[type="number"]:focus, .control-group select:focus {
+            outline: none; border-color: var(--accent-primary);
+            box-shadow: 0 0 4px color-mix(in srgb, var(--accent-primary) 40%, transparent);
+        }
+
+        .button-group { display: flex; justify-content: space-around; margin-bottom: 12px; }
+        button, .shop-item button, .challenge-option button {
+            background-color: var(--accent-primary); color: white; border: none;
+            padding: 9px 15px; border-radius: 4px; font-size: 0.95em; cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            flex-grow: 1; margin: 0 4px;
+        }
+        button:hover:not(:disabled) { background-color: var(--accent-secondary); }
+        button:active:not(:disabled) { transform: translateY(1px); }
+        button:disabled { background-color: #7f8c8d; cursor: not-allowed; transform: translateY(0); opacity: 0.6;}
+
+        #bet-over-under-group button { background-color: var(--accent-bet-overunder); }
+        #bet-over-under-group button:hover:not(:disabled) { background-color: color-mix(in srgb, var(--accent-bet-overunder) 80%, black); }
+        #bet-over-under-group button.selected {
+            background-color: var(--accent-bet-selected);
+            box-shadow: 0 0 6px color-mix(in srgb, var(--accent-bet-selected) 60%, transparent);
+        }
+
+        #status-bar, #odds-display, #result-display, .active-challenge-display {
+            background-color: var(--bg-tertiary); padding: 10px; border-radius: 4px;
+            margin-bottom: 12px; border: 1px solid var(--border-color); font-size: 1em;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        #status-bar { font-size: 1.2em; font-weight: bold; }
+        #status-bar #balance-amount { color: var(--color-win); }
+        #status-bar #coin-amount { color: var(--color-coin); }
+        #status-bar .coin-icon { vertical-align: middle; height: 1em; margin-left: 2px; }
+
+        #odds-display { color: var(--accent-bet-selected); } #odds-display strong { color: var(--text-primary); }
+        #result-display { min-height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #result-display .win { color: var(--color-win); }
+        #result-display .loss { color: var(--color-loss); }
+        #result-display .push { color: var(--color-push); }
+        .error-message { color: var(--color-loss); font-size: 0.8em; margin-top: 3px; min-height: 0.9em; }
+        
+        /* Dice Animation for 10 dice */
+        #dice-animation-area {
+            display: flex;
+            flex-wrap: wrap; /* Allow dice to wrap if container is too narrow */
+            justify-content: center;
+            align-items: center;
+            gap: 5px; /* Reduced gap */
+            margin-bottom: 12px;
+            padding: 5px;
+            min-height: 60px; /* Adjust if needed based on dice size */
+            /* border: 1px dashed var(--border-color); */
+        }
+        .animated-dice {
+            width: 28px; height: 28px; /* Smaller dice */
+            background-color: #fff; color: #000;
+            border: 1px solid #555; /* Thinner border */
+            border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.1em; font-weight: bold;
+            transform-origin: center center;
+        }
+        .animated-dice.rolling { animation: roll 0.6s ease-out forwards; }
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(1) translateY(0px); opacity: 1;}
+            25% { transform: rotate(90deg) scale(1.1) translateY(-5px); opacity: 0.9; }
+            75% { transform: rotate(270deg) scale(1.1) translateY(-5px); opacity: 0.9; }
+            100% { transform: rotate(359deg) scale(1) translateY(0px); opacity: 1;}
+        }
+        /* Skin classes - apply to .animated-dice directly now */
+        .skin-fire { background: orangered; border-color: darkred; color: yellow; }
+        .skin-ice { background: lightblue; border-color: darkblue; color: white; }
+        .skin-gold { background: gold; border-color: darkgoldenrod; color: black; }
+        .skin-void { background: #1a1a2e; border-color: #0f3460; color: #e94560; }
+        .skin-emerald { background: #2ecc71; border-color: #27ae60; color: white; }
+
+
+        /* Bet History */
+        #bet-history-list { list-style-type: none; padding: 0; max-height: 220px; overflow-y: auto; background-color: var(--bg-tertiary); border-radius: 4px; border: 1px solid var(--border-color); }
+        #bet-history-list li { padding: 7px 9px; border-bottom: 1px solid var(--bg-secondary); font-size: 0.85em; text-align: left; line-height: 1.3; }
+        #bet-history-list li:last-child { border-bottom: none; }
+        #bet-history-list li span { font-weight: bold; }
+        #bet-history-list li .history-win { color: var(--color-win); }
+        #bet-history-list li .history-loss { color: var(--color-loss); }
+        #bet-history-list li .history-push { color: var(--color-push); }
+        #bet-history-list::-webkit-scrollbar { width: 7px; } #bet-history-list::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        #bet-history-list::-webkit-scrollbar-thumb { background: #556b82; border-radius: 3px;} #bet-history-list::-webkit-scrollbar-thumb:hover { background: #7f8c8d; }
+
+        /* Challenges */
+        .active-challenge-display { text-align: left; }
+        .active-challenge-display p { margin: 4px 0; font-size: 0.95em;}
+        .active-challenge-display .progress-bar-container { background-color: var(--border-color); border-radius: 2px; height: 8px; overflow: hidden; margin-top: 4px; }
+        .active-challenge-display .progress-bar { background-color: var(--accent-primary); height: 100%; width: 0%; transition: width 0.3s ease; }
+        .active-challenge-display .coin-icon { vertical-align: middle; height: 0.9em; }
+        
+        #challenge-selection-area { margin-top: 12px; }
+        .challenge-option { background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 4px; padding: 9px; margin-bottom: 8px; text-align: left;}
+        .challenge-option p { margin: 2px 0; font-size: 0.85em; }
+        .challenge-option button { font-size: 0.85em; padding: 5px 10px; margin-top: 6px; width: 100%;}
+        .challenge-option .coin-icon { vertical-align: middle; height: 0.85em; }
+
+        /* Shop (Themes & Skins) */
+        .shop-section h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 4px; margin-bottom: 8px; }
+        .shop-items-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+        .shop-item { background-color: var(--bg-tertiary); padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: space-between; align-items: center;}
+        .shop-item .item-name { font-weight: bold; margin-bottom: 4px; font-size: 0.9em;}
+        .shop-item .item-cost { color: var(--color-coin); margin-bottom: 6px; font-size: 0.85em;}
+        .shop-item .item-cost .coin-icon { vertical-align: middle; height: 0.9em; }
+        .shop-item .item-preview { width: 40px; height: 25px; border: 1px solid var(--text-secondary); margin-bottom: 6px; border-radius: 2px; }
+        /* Theme Previews */
+        .theme-preview-default { background: #2c3e50; } .theme-preview-light { background: #f0f3f4; }
+        .theme-preview-forest { background: #2d572c; } .theme-preview-ocean { background: #004080; }
+        .theme-preview-sunset { background: linear-gradient(to bottom, #ff7e5f, #feb47b); }
+
+        .skin-preview { width: 25px; height: 25px; border-radius: 4px; /* Square for dice */ }
+        /* Skin Previews */
+        .skin-preview-default { background: #fff; border: 1px solid #333; }
+        .skin-preview-fire { background: orangered; } .skin-preview-ice { background: lightblue; }
+        .skin-preview-gold { background: gold; } .skin-preview-void { background: #1a1a2e; }
+        .skin-preview-emerald { background: #2ecc71; }
+
+        .shop-item button { font-size: 0.8em; padding: 5px 8px; width: 100%; }
+        .shop-item button.owned { background-color: var(--color-win); }
+        .shop-item button.equipped { background-color: var(--accent-bet-selected); }
+
+        #reset-progress-button { background-color: var(--color-loss); margin-top: 15px; }
+        #reset-progress-button:hover { background-color: color-mix(in srgb, var(--color-loss) 80%, black); }
+        .fixed-n-info { font-size: 0.85em; color: var(--text-secondary); margin-bottom: 10px; }
+
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div id="game-column">
+            <div class="game-section" id="main-game-panel">
+                <h1>Dice Tycoon <span style="font-size: 0.7em; color: var(--accent-secondary);">(N=10 Edition)</span></h1>
+                <div id="status-bar">
+                    Balance: <span id="balance-amount">£0.00</span> | Coins: <span id="coin-amount">0</span>
+                    <svg class="coin-icon" viewBox="0 0 24 24" fill="#FFD700"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10C2 6.68629 6.47715 4 12 4C17.5228 4 22 6.68629 22 10V14C22 17.3137 17.5228 20 12 20C6.47715 20 2 17.3137 2 14V10Z"></path></svg>
+                </div>
+                
+                <div class="control-group">
+                    <label for="dice-type" title="Select the type of dice to roll (e.g., D6 has 6 sides)">Dice Type:</label>
+                    <select id="dice-type"></select>
+                </div>
+                 <p class="fixed-n-info">Number of dice is fixed at 10 for all rolls.</p>
+
+                <!-- Number of Dice Input Removed -->
+
+                <div class="control-group">
+                    <label for="target-average" title="Bet if the average of 10 dice rolls will be over or under this value">Target Average (10 dice):</label>
+                    <input type="number" id="target-average" value="3.5000" step="0.0001">
+                    <div class="error-message" id="target-average-error"></div>
+                </div>
+
+                <div class="control-group">
+                    <label for="bet-amount" title="Amount of £ to bet on this roll">Bet Amount (£):</label>
+                    <input type="number" id="bet-amount" value="1.0" min="0.1" step="0.1">
+                    <div class="error-message" id="bet-amount-error"></div>
+                </div>
+                
+                <div id="odds-display" title="Calculated odds based on your input parameters for 10 dice">
+                    <strong>Payout (Win):</strong> <span id="payout-multiplier-text">N/A</span> : 1 | 
+                    <strong>Prob. Win:</strong> <span id="probability-text">N/A</span>
+                </div>
+
+                <div id="bet-over-under-group" class="button-group">
+                    <button id="bet-under-button" title="Bet the average will be UNDER the target (Shortcut: U)">Bet UNDER</button>
+                    <button id="bet-over-button" title="Bet the average will be OVER the target (Shortcut: O)">Bet OVER</button>
+                </div>
+                
+                <div id="dice-animation-area">
+                    <!-- 10 Dice will be added by JS -->
+                </div>
+
+                <button id="place-bet-button" disabled title="Place your bet (Shortcut: Enter)">Select Over/Under</button>
+                <button id="repeat-last-bet-button" title="Set inputs to your previous bet's parameters">Repeat Last Bet</button>
+
+                <div id="result-display">Awaiting your bet...</div>
+            </div>
+
+            <div class="game-section" id="bet-history-panel">
+                <h2>Bet History</h2>
+                <ul id="bet-history-list"><li>No bets placed yet.</li></ul>
+            </div>
+        </div>
+
+        <div id="meta-column">
+            <div class="meta-section" id="challenges-panel">
+                <h2>Challenges</h2>
+                <div class="active-challenge-display" id="active-challenge-display">
+                    <p>No active challenge. Complete one to get new options!</p>
+                </div>
+                <div id="challenge-selection-area"></div>
+            </div>
+
+            <div class="meta-section" id="shop-panel">
+                <h2>Shop</h2>
+                <div class="shop-section" id="themes-shop">
+                    <h3>Themes</h3>
+                    <div id="themes-grid" class="shop-items-grid"></div>
+                </div>
+                <div class="shop-section" id="skins-shop">
+                    <h3>Dice Skins</h3>
+                    <div id="skins-grid" class="shop-items-grid"></div>
+                </div>
+            </div>
+            <div class="meta-section">
+                <button id="reset-progress-button" title="WARNING: This will reset all your game progress, balance, coins, and unlocks!">Reset All Progress</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // --- GAME CONSTANTS & DATA ---
+    const HOUSE_EDGE_FACTOR = 1;
+    const MAX_HISTORY_ITEMS = 15;
+    const NUM_DICE_FIXED = 10; // Number of dice is now fixed
+
+    const diceData = { /* same as before */
+        'D4':  { sides: 4,  mean: 2.5,    variance: 1.25 }, 'D6':  { sides: 6,  mean: 3.5,    variance: 35/12 },
+        'D8':  { sides: 8,  mean: 4.5,    variance: 5.25 }, 'D10': { sides: 10, mean: 5.5,    variance: 8.25 },
+        'D12': { sides: 12, mean: 6.5,    variance: 143/12 }, 'D20': { sides: 20, mean: 10.5,   variance: 33.25 }
+    };
+
+    const COIN_SVG_ICON = `<svg class="coin-icon" viewBox="0 0 24 24" fill="#FFD700"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10C2 6.68629 6.47715 4 12 4C17.5228 4 22 6.68629 22 10V14C22 17.3137 17.5228 20 12 20C6.47715 20 2 17.3137 2 14V10Z"></path></svg>`;
+
+    const availableThemes = {
+        default: { name: "Default Dark", colors: { '--bg-primary': '#2c3e50', '--bg-secondary': '#34495e', '--bg-tertiary': '#233444', '--text-primary': '#ecf0f1', '--accent-primary': '#1abc9c'} , cost: 0 },
+        light: { name: "Light Mode", colors: { '--bg-primary': '#f0f3f4', '--bg-secondary': '#ffffff', '--bg-tertiary': '#e8ecef', '--text-primary': '#2c3e50', '--accent-primary': '#2980b9'}, cost: 250 }, // Cheaper
+        forest: { name: "Forest Calm", colors: { '--bg-primary': '#2d572c', '--bg-secondary': '#3e7d3b', '--bg-tertiary': '#1e4D1e', '--text-primary': '#f0fff0', '--accent-primary': '#6ab04c'}, cost: 350 }, // Cheaper
+        ocean: { name: "Deep Ocean", colors: { '--bg-primary': '#004080', '--bg-secondary': '#00509E', '--bg-tertiary': '#003060', '--text-primary': '#E0FFFF', '--accent-primary': '#50C878'}, cost: 500 },
+        sunset: { name: "Warm Sunset", colors: { '--bg-primary': '#D4583B', '--bg-secondary': '#F88C5D', '--bg-tertiary': '#B2402B', '--text-primary': '#FFF2E6', '--accent-primary': '#FEB47B'}, cost: 600 },
+    };
+    const availableSkins = {
+        default: { name: "Classic White", animationClass: "", cost: 0 }, // Removed preview class, apply to dice directly
+        fire: { name: "Fiery Red", animationClass: "skin-fire", cost: 400 }, // Cheaper
+        ice: { name: "Glacial Blue", animationClass: "skin-ice", cost: 400 }, // Cheaper
+        gold: { name: "Golden Dice", animationClass: "skin-gold", cost: 1000 },
+        void: { name: "Void Walker", animationClass: "skin-void", cost: 750 },
+        emerald: { name: "Emerald Gem", animationClass: "skin-emerald", cost: 750 },
+    };
+    
+    // --- PLAYER STATE (Persisted) --- (Same structure)
+    let playerData = {
+        balance: 10.00, coins: 0, unlockedThemes: ['default'], unlockedSkins: ['default'],
+        currentTheme: 'default', currentSkin: 'default', activeChallenge: null, 
+        completedChallengeCount: 0, lastBetParams: null,
+    };
+
+    // --- GAME STATE (Non-persisted) --- (numDiceInput removed from tracking)
+    let selectedBetDirection = null;
+    let currentPayoutMultiplier = 0;
+    let currentDiceKey = 'D6';
+    let currentDiceSides = diceData[currentDiceKey].sides;
+    let currentDiceMean = diceData[currentDiceKey].mean;
+    let currentDiceStdDev = Math.sqrt(diceData[currentDiceKey].variance);
+    let betHistory = [];
+    let lastRolledDiceValues = []; // Store the 10 dice values from animation
+
+    // --- DOM ELEMENTS ---
+    let dom = {};
+
+    // --- LOCALSTORAGE FUNCTIONS --- (Same as before)
+    function savePlayerData() { try { localStorage.setItem('diceTycoonPlayerData', JSON.stringify(playerData)); localStorage.setItem('diceTycoonBetHistory', JSON.stringify(betHistory)); } catch (e) { console.error("LS Save Error:", e); } }
+    function loadPlayerData() { try { const sPD = localStorage.getItem('diceTycoonPlayerData'); if (sPD) { playerData = {...playerData, ...JSON.parse(sPD)}; playerData.unlockedThemes = playerData.unlockedThemes || ['default']; playerData.unlockedSkins = playerData.unlockedSkins || ['default']; } const sH = localStorage.getItem('diceTycoonBetHistory'); if (sH) { betHistory = JSON.parse(sH); } } catch (e) { console.error("LS Load Error:", e); } }
+    function resetAllProgress(silent = false) { if (!silent && !confirm("Are you sure you want to reset ALL progress? This cannot be undone.")) return; playerData = { balance: 10.00, coins: 0, unlockedThemes: ['default'], unlockedSkins: ['default'], currentTheme: 'default', currentSkin: 'default', activeChallenge: null, completedChallengeCount: 0, lastBetParams: null, }; betHistory = []; localStorage.removeItem('diceTycoonPlayerData'); localStorage.removeItem('diceTycoonBetHistory'); applyTheme(playerData.currentTheme); updateBalanceDisplay(); updateBetHistoryDisplay(); updateActiveChallengeDisplay(); if (!playerData.activeChallenge) offerNewChallenges(); populateShop(); initGameControls(); dom.resultDisplay.innerHTML = "Progress Reset."; console.log("Progress reset."); }
+
+    // --- ERF & PHI (STATISTICS) --- (Same as before)
+    function erf(x) { const s = (x >= 0) ? 1 : -1; x = Math.abs(x); const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911; const t=1.0/(1.0+p*x); return s*(1.0-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x)); }
+    function phi(z) { return 0.5 * (1 + erf(z / Math.sqrt(2))); }
+
+    // --- CHALLENGE SYSTEM (Adjusted for fixed N) ---
+    function generateChallenge() {
+        const types = [
+            { type: 'profit', baseReward: 40, description: "Earn £{target} profit.", targetMin: 15, targetMax: 75 },
+            { type: 'winStreak', baseReward: 60, description: "Win {target} bets in a row.", targetMin: 2, targetMax: 4 },
+            { type: 'specificWinOdds', baseReward: 80, description: "Win a bet on {dice} with odds > {odds}:1.", 
+              dice: Object.keys(diceData), minOdds: [2.5, 4, 6]}, // Odds focus
+            { type: 'numBetsPlaced', baseReward: 25, description: "Place {target} bets.", targetMin: 5, targetMax: 15},
+            { type: 'collectCoins', baseReward: 50, description: "Earn {target} Coins from challenges.", targetMin: 100, targetMax: 300}, // Meta challenge
+            { type: 'highRollerWin', baseReward: 70, description: "Win a bet of at least £{amount}.", targetMin: 5, targetMax: 15},
+        ];
+        const selectedType = types[Math.floor(Math.random() * types.length)];
+        let challenge = {
+            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            type: selectedType.type, currentValue: 0,
+            rewardCoins: selectedType.baseReward + playerData.completedChallengeCount * 3, // Slower scaling
+            params: {}
+        };
+
+        switch (selectedType.type) {
+            case 'profit':
+            case 'winStreak':
+            case 'numBetsPlaced':
+            case 'collectCoins':
+                challenge.targetValue = Math.floor(Math.random() * (selectedType.targetMax - selectedType.targetMin + 1) + selectedType.targetMin);
+                challenge.description = selectedType.description.replace('{target}', challenge.targetValue);
+                if (selectedType.type === 'profit') challenge.description = selectedType.description.replace('{target}', challenge.targetValue.toFixed(2));
+                break;
+            case 'specificWinOdds':
+                challenge.params.diceType = selectedType.dice[Math.floor(Math.random() * selectedType.dice.length)];
+                challenge.params.minOdds = selectedType.minOdds[Math.floor(Math.random() * selectedType.minOdds.length)];
+                challenge.targetValue = 1;
+                challenge.description = selectedType.description
+                    .replace('{dice}', challenge.params.diceType)
+                    .replace('{odds}', challenge.params.minOdds.toFixed(1));
+                break;
+            case 'highRollerWin':
+                 challenge.targetValue = 1; // one such win
+                 challenge.params.minBetAmount = Math.floor(Math.random() * (selectedType.targetMax - selectedType.targetMin + 1) + selectedType.targetMin);
+                 challenge.description = selectedType.description.replace('{amount}', challenge.params.minBetAmount.toFixed(2));
+                 break;
+        }
+        return challenge;
+    }
+    // offerNewChallenges, updateActiveChallengeDisplay, checkChallengeCompletion - similar logic, just descriptions and coin icons updated
+    function offerNewChallenges() {
+        dom.challengeSelectionArea.innerHTML = '<h3>Choose Your Next Challenge:</h3>';
+        for (let i = 0; i < 3; i++) {
+            const challenge = generateChallenge();
+            const div = document.createElement('div');
+            div.className = 'challenge-option';
+            div.innerHTML = `
+                <p><strong>${challenge.description}</strong></p>
+                <p>Reward: ${challenge.rewardCoins} ${COIN_SVG_ICON}</p>
+                <button data-challenge-id='${challenge.id}'>Select</button>
+            `;
+            div.querySelector('button').addEventListener('click', () => { playerData.activeChallenge = challenge; dom.challengeSelectionArea.innerHTML = ''; updateActiveChallengeDisplay(); savePlayerData(); });
+            dom.challengeSelectionArea.appendChild(div);
+        }
+    }
+    function updateActiveChallengeDisplay() {
+        if (!dom.activeChallengeDisplay) return;
+        const ac = playerData.activeChallenge;
+        if (ac) {
+            const progressPercent = ac.targetValue > 0 ? (ac.currentValue / ac.targetValue) * 100 : 0;
+            dom.activeChallengeDisplay.innerHTML = `
+                <p><strong>Active:</strong> ${ac.description}</p>
+                <p>Progress: ${ac.currentValue} / ${ac.targetValue} | Reward: ${ac.rewardCoins} ${COIN_SVG_ICON}</p>
+                <div class="progress-bar-container"><div class="progress-bar" style="width: ${Math.min(progressPercent, 100)}%;"></div></div>
+            `;
+        } else {
+            dom.activeChallengeDisplay.innerHTML = `<p>No active challenge. Place bets or complete one to get new options!</p>`;
+            if (dom.challengeSelectionArea.innerHTML === '') { offerNewChallenges(); }
+        }
+    }
+    function checkChallengeCompletion(betResult) { // betResult: { won, profit, diceKey, betAmount, odds }
+        const ac = playerData.activeChallenge;
+        if (!ac) return;
+        let progressMade = false;
+        switch (ac.type) {
+            case 'profit': if (betResult.profit > 0) { ac.currentValue = parseFloat((ac.currentValue + betResult.profit).toFixed(2)); progressMade = true; } break;
+            case 'winStreak': if (betResult.won) ac.currentValue++; else ac.currentValue = 0; progressMade = true; break;
+            case 'specificWinOdds': if (betResult.won && betResult.diceKey === ac.params.diceType && betResult.odds > ac.params.minOdds) { ac.currentValue++; progressMade = true; } break;
+            case 'numBetsPlaced': ac.currentValue++; progressMade = true; break;
+            case 'highRollerWin': if (betResult.won && betResult.betAmount >= ac.params.minBetAmount) { ac.currentValue++; progressMade = true; } break;
+            // 'collectCoins' is updated when a challenge *gives* coins.
+        }
+        if (ac.currentValue >= ac.targetValue) {
+            dom.resultDisplay.innerHTML += `<p class="win">Challenge Complete: ${ac.description} You earned ${ac.rewardCoins} Coins!</p>`;
+            playerData.coins += ac.rewardCoins;
+            playerData.completedChallengeCount++;
+            // Check if this completion satisfies a 'collectCoins' challenge
+            if (playerData.activeChallenge && playerData.activeChallenge.type === 'collectCoins') { // Check if new active one is collect
+                 playerData.activeChallenge.currentValue += ac.rewardCoins;
+                 if (playerData.activeChallenge.currentValue >= playerData.activeChallenge.targetValue) { /* complete it too */ }
+            } else { // Check if there was a previous one that might be this
+                const collectChallenge = playerData.activeChallenge; // temp store before nulling
+                 playerData.activeChallenge = null; // Null the completed one
+                if(collectChallenge && collectChallenge.type === 'collectCoins'){ // if the one just completed was collect type
+                    // This should not happen as collectCoins is based on earning from *other* challenges
+                } else { // Check if *another* active challenge is collectCoins - this is tricky logic, simplified for now
+                    let anyCollectChallenge = null; // simplified: assume only one "collectCoins" challenge could be active
+                    // This part of logic needs refinement if multiple challenge types can be active or if collectCoins is a meta-layer
+                }
+
+            }
+            playerData.activeChallenge = null; // Null the completed one in any case
+            updateBalanceDisplay(); offerNewChallenges();
+        }
+        updateActiveChallengeDisplay(); savePlayerData();
+    }
+    
+    // --- THEME & SKIN SYSTEM --- (Similar, skin preview adjusted)
+    function applyTheme(themeKey) { const theme = availableThemes[themeKey]; if (!theme) return; for (const [variable, value] of Object.entries(theme.colors)) { document.documentElement.style.setProperty(variable, value); } playerData.currentTheme = themeKey; populateShop(); savePlayerData(); }
+    function applySkin(skinKey) { playerData.currentSkin = skinKey; populateShop(); savePlayerData(); /* Visual change in createAnimatedDice/runDiceAnimation */ }
+    
+    function populateShop() {
+        dom.themesGrid.innerHTML = '';
+        for (const [key, theme] of Object.entries(availableThemes)) { /* ... */ 
+            const itemDiv = document.createElement('div'); itemDiv.className = 'shop-item';
+            const isOwned = playerData.unlockedThemes.includes(key); const isEquipped = playerData.currentTheme === key;
+            itemDiv.innerHTML = `<div class="item-name">${theme.name}</div><div class="item-preview theme-preview-${key}"></div><div class="item-cost">${isOwned ? 'Owned' : theme.cost + COIN_SVG_ICON}</div><button data-key="${key}" class="${isEquipped ? 'equipped' : (isOwned ? 'owned' : '')}" ${isEquipped ? 'disabled' : ''}>${isEquipped ? 'Equipped' : (isOwned ? 'Equip' : 'Buy')}</button>`;
+            itemDiv.querySelector('button').addEventListener('click', (e) => { const itemKey = e.target.dataset.key; if (playerData.unlockedThemes.includes(itemKey)) applyTheme(itemKey); else if (playerData.coins >= availableThemes[itemKey].cost) { playerData.coins -= availableThemes[itemKey].cost; playerData.unlockedThemes.push(itemKey); updateBalanceDisplay(); applyTheme(itemKey); } else alert("Not enough coins!"); });
+            dom.themesGrid.appendChild(itemDiv);
+        }
+        dom.skinsGrid.innerHTML = '';
+        for (const [key, skin] of Object.entries(availableSkins)) { /* ... */
+             const itemDiv = document.createElement('div'); itemDiv.className = 'shop-item';
+            const isOwned = playerData.unlockedSkins.includes(key); const isEquipped = playerData.currentSkin === key;
+            const skinPreviewClass = skin.animationClass || 'skin-preview-default'; // Use animation class for preview or default
+            itemDiv.innerHTML = `<div class="item-name">${skin.name}</div><div class="item-preview skin-preview ${skinPreviewClass}"></div><div class="item-cost">${isOwned ? 'Owned' : skin.cost + COIN_SVG_ICON}</div><button data-key="${key}" class="${isEquipped ? 'equipped' : (isOwned ? 'owned' : '')}" ${isEquipped ? 'disabled' : ''}>${isEquipped ? 'Equipped' : (isOwned ? 'Equip' : 'Buy')}</button>`;
+            itemDiv.querySelector('button').addEventListener('click', (e) => { const itemKey = e.target.dataset.key; if (playerData.unlockedSkins.includes(itemKey)) applySkin(itemKey); else if (playerData.coins >= availableSkins[itemKey].cost) { playerData.coins -= availableSkins[itemKey].cost; playerData.unlockedSkins.push(itemKey); updateBalanceDisplay(); applySkin(itemKey); } else alert("Not enough coins!"); });
+            dom.skinsGrid.appendChild(itemDiv);
+        }
+    }
+
+    // --- DICE ANIMATION (10 dice, values used for average) ---
+    function createAnimatedDice() {
+        dom.diceAnimationArea.innerHTML = '';
+        for (let i = 0; i < NUM_DICE_FIXED; i++) {
+            const diceDiv = document.createElement('div');
+            diceDiv.className = 'animated-dice';
+            if (availableSkins[playerData.currentSkin] && availableSkins[playerData.currentSkin].animationClass) {
+                diceDiv.classList.add(availableSkins[playerData.currentSkin].animationClass);
+            }
+            diceDiv.textContent = '?';
+            dom.diceAnimationArea.appendChild(diceDiv);
+        }
+    }
+
+    async function runDiceAnimationAndGetValues() {
+        lastRolledDiceValues = [];
+        const diceElements = dom.diceAnimationArea.querySelectorAll('.animated-dice');
+        
+        diceElements.forEach(d => {
+            d.classList.remove('rolling');
+            // Re-apply skin class explicitly if needed, as it might get removed by other operations
+            d.className = 'animated-dice'; // Reset base class
+             if (availableSkins[playerData.currentSkin] && availableSkins[playerData.currentSkin].animationClass) {
+                d.classList.add(availableSkins[playerData.currentSkin].animationClass);
+            }
+        });
+        await new Promise(resolve => setTimeout(resolve, 20));
+
+        const rollPromises = [];
+        diceElements.forEach((d, i) => {
+            const rollValue = Math.floor(Math.random() * currentDiceSides) + 1;
+            lastRolledDiceValues.push(rollValue);
+            d.textContent = rollValue;
+            const promise = new Promise(res => setTimeout(() => {
+                d.classList.add('rolling');
+                setTimeout(res, 600); // Match animation duration
+            }, i * 30)); // Stagger start slightly more
+            rollPromises.push(promise);
+        });
+        await Promise.all(rollPromises);
+        return lastRolledDiceValues;
+    }
+
+    // --- CORE GAME LOGIC ---
+    function setupDiceTypeSelector() { /* ... same */ for (const key in diceData) { const o=document.createElement('option');o.value=key;o.textContent=`${key} (median: ${diceData[key].mean.toFixed(2)}, ${diceData[key].sides} sides)`;dom.diceTypeSelect.appendChild(o);} dom.diceTypeSelect.value = currentDiceKey; }
+    function handleDiceTypeChange() { /* ... same */ currentDiceKey = dom.diceTypeSelect.value; const s=diceData[currentDiceKey]; currentDiceSides=s.sides; currentDiceMean=s.mean; currentDiceStdDev=Math.sqrt(s.variance); dom.targetAverageInput.min="1.0000"; dom.targetAverageInput.max=currentDiceSides.toFixed(4); dom.targetAverageInput.value=currentDiceMean.toFixed(4); updateOddsDisplay(); createAnimatedDice(); /* Recreate dice on type change for correct sides */ }
+    
+    function updateBalanceDisplay() { dom.balanceAmount.textContent = `£${playerData.balance.toFixed(2)}`; dom.coinAmount.textContent = playerData.coins; }
+    
+    function validateInputs() { /* Removed numDice validation */
+        let isValid = true; dom.targetAverageError.textContent = ''; dom.betAmountError.textContent = '';
+        const targetAverage = parseFloat(dom.targetAverageInput.value);
+        const targetMin = 1.0; const targetMax = currentDiceSides;
+        if (isNaN(targetAverage) || targetAverage < targetMin || targetAverage > targetMax) { dom.targetAverageError.textContent = `Target: ${targetMin.toFixed(4)}-${targetMax.toFixed(4)}.`; isValid = false; }
+        const betAmount = parseFloat(dom.betAmountInput.value);
+        if (isNaN(betAmount) || betAmount <= 0) { dom.betAmountError.textContent = 'Bet > 0.'; isValid = false; }
+        else if (betAmount > playerData.balance) { dom.betAmountError.textContent = 'Bet ≤ Balance.'; isValid = false; }
+        
+        dom.placeBetButton.disabled = !isValid || !selectedBetDirection || currentPayoutMultiplier === Infinity || currentPayoutMultiplier === 0;
+        /* ... button text logic same ... */
+        if (dom.placeBetButton.disabled && selectedBetDirection && isValid) { if (currentPayoutMultiplier === Infinity || currentPayoutMultiplier === 0) dom.placeBetButton.textContent = "Adjust Target"; }
+        else if (!selectedBetDirection && isValid) { dom.placeBetButton.textContent = "Select Over/Under"; }
+        else if (!isValid) { dom.placeBetButton.textContent = "Invalid Inputs"; }
+        else { dom.placeBetButton.textContent = "Place Bet"; }
+        return isValid;
+    }
+    
+    function updateOddsDisplay() { /* Uses NUM_DICE_FIXED */
+        if (!selectedBetDirection) { /* ... */ } if (!validateInputs()) { /* ... */ }
+        const targetAverage = parseFloat(dom.targetAverageInput.value);
+        const stdError = currentDiceStdDev / Math.sqrt(NUM_DICE_FIXED); // Use fixed N
+        if (stdError === 0) { /* ... */ } else {
+            const zScore = (targetAverage - currentDiceMean) / stdError;
+            let probWin = (selectedBetDirection === 'over') ? (1 - phi(zScore)) : phi(zScore);
+            dom.probabilityText.textContent = `${(probWin * 100).toFixed(3)}%`;
+            currentPayoutMultiplier = probWin > 0.000001 ? HOUSE_EDGE_FACTOR / probWin : Infinity;
+        }
+        /* ... payout text logic same ... */
+        if (currentPayoutMultiplier === Infinity) { dom.payoutMultiplierText.textContent = "∞"; }
+        else if (currentPayoutMultiplier === 0 || isNaN(currentPayoutMultiplier)) { dom.payoutMultiplierText.textContent = "N/A"; }
+        else { dom.payoutMultiplierText.textContent = currentPayoutMultiplier.toFixed(3); }
+        validateInputs();
+    }
+    
+    function selectBetDirection(d) { /* ... same */ selectedBetDirection=d; dom.betUnderButton.classList.toggle('selected',d==='under'); dom.betOverButton.classList.toggle('selected',d==='over'); updateOddsDisplay(); }
+    function updateBetHistoryDisplay() { /* ... same, but uses NUM_DICE_FIXED in display */
+        dom.betHistoryList.innerHTML = '';
+        if (betHistory.length === 0) { dom.betHistoryList.innerHTML = '<li>No bets placed yet.</li>'; return; }
+        [...betHistory].reverse().forEach(bet => {
+            const li = document.createElement('li'); /* ... */
+            let rC='', pLT=''; if(bet.resultType==='win'){rC='history-win';pLT=`+£${(bet.winnings-bet.betAmount).toFixed(2)}`;} else if(bet.resultType==='loss'){rC='history-loss';pLT=`-£${bet.betAmount.toFixed(2)}`;} else{rC='history-push';pLT='£0.00';}
+            li.innerHTML = `Bet <span>${NUM_DICE_FIXED} ${bet.diceKey}</span> avg <span>${bet.direction.toUpperCase()} ${bet.targetAverage.toFixed(4)}</span>. Actual: <span>${bet.actualAverage.toFixed(5)}</span>. <span class="${rC}">${bet.resultType.toUpperCase()} (${pLT})</span>. Bet: £${bet.betAmount.toFixed(2)}.`;
+            dom.betHistoryList.appendChild(li);
+        });
+    }
+    function repeatLastBet() { if (playerData.lastBetParams) { const p = playerData.lastBetParams; if (diceData[p.diceKey]) dom.diceTypeSelect.value = p.diceKey; handleDiceTypeChange(); dom.targetAverageInput.value = p.targetAverage.toFixed(4); dom.betAmountInput.value = p.betAmount.toFixed(2); if (p.selectedBetDirection) selectBetDirection(p.selectedBetDirection); else updateOddsDisplay(); dom.resultDisplay.innerHTML = "Last bet parameters loaded."; } else { dom.resultDisplay.innerHTML = "No previous bet to repeat."; } }
+
+    async function handleBet() {
+        if (!validateInputs() || !selectedBetDirection || currentPayoutMultiplier === Infinity || currentPayoutMultiplier === 0) { /* ... */ return; }
+        const betAmount = parseFloat(dom.betAmountInput.value);
+        const targetAverage = parseFloat(dom.targetAverageInput.value);
+        const payoutForThisBet = currentPayoutMultiplier;
+
+        playerData.lastBetParams = { diceKey: currentDiceKey, /* numDice removed */ targetAverage, betAmount, selectedBetDirection };
+        playerData.balance -= betAmount; updateBalanceDisplay();
+        [dom.placeBetButton, dom.betUnderButton, dom.betOverButton, dom.diceTypeSelect, /* dom.numDiceInput, */ dom.targetAverageInput, dom.betAmountInput, dom.repeatLastBetButton].forEach(el => el.disabled = true);
+        dom.resultDisplay.innerHTML = `<p>Rolling ${NUM_DICE_FIXED} ${currentDiceKey}...</p>`;
+        
+        const rolledValues = await runDiceAnimationAndGetValues(); // Get values from animation
+        const sumOfRolls = rolledValues.reduce((sum, val) => sum + val, 0);
+        const actualAverage = sumOfRolls / NUM_DICE_FIXED;
+
+        let winnings = 0, resultMessage = "", userWon = false, resultType = 'loss', profit = -betAmount;
+        if (selectedBetDirection === 'over' && actualAverage > targetAverage) userWon = true;
+        else if (selectedBetDirection === 'under' && actualAverage < targetAverage) userWon = true;
+        
+        if (Math.abs(actualAverage - targetAverage) < 0.000001) { /* Push handling same */ resultMessage = `<p class="push">Actual avg ${actualAverage.toFixed(5)} was the target. Push - bet returned.</p>`; resultType = 'push'; userWon = false; playerData.balance += betAmount; profit = 0; }
+        else if (userWon) { /* Win handling same */ winnings = betAmount * payoutForThisBet; playerData.balance += winnings; profit = winnings - betAmount; resultMessage = `<p class="win">YOU WON! Avg: ${actualAverage.toFixed(5)}. Won £${profit.toFixed(2)} (Total: £${winnings.toFixed(2)}).</p>`; resultType = 'win'; }
+        else { /* Loss handling same */ resultMessage = `<p class="loss">YOU LOST. Avg: ${actualAverage.toFixed(5)}. Lost £${betAmount.toFixed(2)}.</p>`; resultType = 'loss'; }
+
+        dom.resultDisplay.innerHTML = `<p>You bet ${NUM_DICE_FIXED} ${currentDiceKey} avg <strong>${selectedBetDirection.toUpperCase()} ${targetAverage.toFixed(4)}</strong>.</p><p>Actual avg: <strong>${actualAverage.toFixed(5)}</strong>.</p> ${resultMessage}`;
+        
+        betHistory.push({ diceKey: currentDiceKey, /* numDice removed */ targetAverage, direction: selectedBetDirection, betAmount, actualAverage, resultType, winnings: resultType === 'win' ? winnings : (resultType === 'push' ? betAmount : 0) });
+        if (betHistory.length > MAX_HISTORY_ITEMS) betHistory.shift();
+        updateBetHistoryDisplay(); updateBalanceDisplay();
+        checkChallengeCompletion({ won: userWon, profit, diceKey: currentDiceKey, betAmount, odds: payoutForThisBet });
+
+        if (playerData.balance <= 0 && !playerData.activeChallenge) { /* Game over handling */ }
+        else { [dom.placeBetButton, dom.betUnderButton, dom.betOverButton, dom.diceTypeSelect, /* dom.numDiceInput, */ dom.targetAverageInput, dom.betAmountInput, dom.repeatLastBetButton].forEach(el => el.disabled = false); validateInputs(); updateOddsDisplay(); }
+        savePlayerData();
+    }
+
+    // --- KEYBOARD SHORTCUTS --- (Same)
+    function handleKeyPress(e) { if (document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='SELECT'){if(e.key==='Enter'&&dom.placeBetButton&&!dom.placeBetButton.disabled){e.preventDefault();dom.placeBetButton.click();}return;} switch(e.key.toLowerCase()){case 'o':dom.betOverButton.click();break;case 'u':dom.betUnderButton.click();break;case 'enter':if(dom.placeBetButton&&!dom.placeBetButton.disabled)dom.placeBetButton.click();break;} }
+
+    // --- INITIALIZATION ---
+    function initDomElements() {
+        dom.balanceAmount = document.getElementById('balance-amount'); dom.coinAmount = document.getElementById('coin-amount');
+        dom.diceTypeSelect = document.getElementById('dice-type');
+        // dom.numDiceInput REMOVED
+        dom.targetAverageInput = document.getElementById('target-average'); dom.betAmountInput = document.getElementById('bet-amount');
+        // dom.numDiceError REMOVED
+        dom.targetAverageError = document.getElementById('target-average-error'); dom.betAmountError = document.getElementById('bet-amount-error');
+        dom.payoutMultiplierText = document.getElementById('payout-multiplier-text'); dom.probabilityText = document.getElementById('probability-text');
+        dom.betUnderButton = document.getElementById('bet-under-button'); dom.betOverButton = document.getElementById('bet-over-button');
+        dom.placeBetButton = document.getElementById('place-bet-button'); dom.repeatLastBetButton = document.getElementById('repeat-last-bet-button');
+        dom.resultDisplay = document.getElementById('result-display'); dom.betHistoryList = document.getElementById('bet-history-list');
+        dom.diceAnimationArea = document.getElementById('dice-animation-area');
+        dom.activeChallengeDisplay = document.getElementById('active-challenge-display'); dom.challengeSelectionArea = document.getElementById('challenge-selection-area');
+        dom.themesGrid = document.getElementById('themes-grid'); dom.skinsGrid = document.getElementById('skins-grid');
+        dom.resetProgressButton = document.getElementById('reset-progress-button');
+    }
+    
+    function initGameControls() { setupDiceTypeSelector(); handleDiceTypeChange(); createAnimatedDice(); }
+    function initGame() {
+        initDomElements(); loadPlayerData(); initGameControls();
+        applyTheme(playerData.currentTheme); applySkin(playerData.currentSkin);
+        updateBalanceDisplay(); updateBetHistoryDisplay(); updateActiveChallengeDisplay();
+        if (!playerData.activeChallenge) { offerNewChallenges(); }
+        populateShop();
+        dom.diceTypeSelect.addEventListener('change', handleDiceTypeChange);
+        dom.targetAverageInput.addEventListener('input', updateOddsDisplay);
+        dom.betAmountInput.addEventListener('input', validateInputs);
+        dom.betUnderButton.addEventListener('click', () => selectBetDirection('under')); dom.betOverButton.addEventListener('click', () => selectBetDirection('over'));
+        dom.placeBetButton.addEventListener('click', handleBet); dom.repeatLastBetButton.addEventListener('click', repeatLastBet);
+        dom.resetProgressButton.addEventListener('click', () => resetAllProgress(false));
+        document.addEventListener('keydown', handleKeyPress);
+        validateInputs(); updateOddsDisplay(); console.log("Dice Tycoon (N=10) Initialized.");
+    }
+    window.onload = initGame;
+    </script>
+</body>
+</html>
