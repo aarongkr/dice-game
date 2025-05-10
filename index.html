@@ -214,7 +214,7 @@
     <div class="main-wrapper">
         <div id="game-column">
             <div class="game-section" id="main-game-panel">
-                <h1>Dice Tycoon <span style="font-size: 0.7em; color: var(--accent-secondary);">(N=10 Edition)</span></h1>
+                <h1>Dice Tycoon <span style="font-size: 0.7em; color: var(--accent-secondary);"></span></h1>
                 <div id="status-bar">
                     Balance: <span id="balance-amount">£0.00</span> | Coins: <span id="coin-amount">0</span>
                     <svg class="coin-icon" viewBox="0 0 24 24" fill="#FFD700"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 10C2 6.68629 6.47715 4 12 4C17.5228 4 22 6.68629 22 10V14C22 17.3137 17.5228 20 12 20C6.47715 20 2 17.3137 2 14V10Z"></path></svg>
@@ -224,10 +224,7 @@
                     <label for="dice-type" title="Select the type of dice to roll (e.g., D6 has 6 sides)">Dice Type:</label>
                     <select id="dice-type"></select>
                 </div>
-                 <p class="fixed-n-info">Number of dice is fixed at 10 for all rolls.</p>
-
                 <!-- Number of Dice Input Removed -->
-
                 <div class="control-group">
                     <label for="target-average" title="Bet if the average of 10 dice rolls will be over or under this value">Target Average (10 dice):</label>
                     <input type="number" id="target-average" value="3.5000" step="0.0001">
@@ -653,7 +650,7 @@
         dom.placeBetButton.addEventListener('click', handleBet); dom.repeatLastBetButton.addEventListener('click', repeatLastBet);
         dom.resetProgressButton.addEventListener('click', () => resetAllProgress(false));
         document.addEventListener('keydown', handleKeyPress);
-        validateInputs(); updateOddsDisplay(); console.log("Dice Tycoon (N=10) Initialized.");
+        validateInputs(); updateOddsDisplay(); console.log("Dice Tycoon Initialized.");
     }
     window.onload = initGame;
     </script>
